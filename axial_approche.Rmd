@@ -18,6 +18,7 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r cars}
 install.packages("tidyverse")
 library(dplyr)
+library(FactoMineR)
 data = read.csv2('axial.csv',sep = ',')
 head(data)
 ```
@@ -27,8 +28,12 @@ head(data)
 You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
-data_polid <- group_by(data, PolID)
-data_polid
+
+data_polid <- group_by(data, PolID,add=FALSE)
+data_polid <- data %>% group_by(PolID) %>% slice(1)
+dat2 = data_polid[c(4,5,6,7,8,9,10)]
+res = MCA(dat2,quali.sup=7)
+plot(res)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
