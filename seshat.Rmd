@@ -25,7 +25,11 @@ dfn <- read.csv('socompindexe.csv',sep=',')
 data <- subset(dfn, select=-c(Index,SPC1))
 rownames(data) <- dfn$Index
 attach(data)
+head(dfn)
+str(data)
 head(data)
+dim(data)
+dim(dfn)
 ```
 ### 3.1. Vue d'ensemble
 * boxplot
@@ -50,9 +54,11 @@ barplot(lambda/sum(lambda),names.arg = 1:length(lambda))
 title(main="Explication des différentes composantes")
 
 # Les composantes principales : 
-C = X %*% vecteurs_propres
+C = X %*% vecteurs_propres #changement de base vers la nouvelle base des composantes principales
+dim(C)
 # colnames(C) =   paste("comp", 1:4)
 plot(C[,1:2],type="p",xlab='PC1',ylab='PC2')
+str(C)
 # text(C[,1:2])
 title(main="Projection sur les 2 premiers axes principaux")
 lines(c(min(C[,1]),max(C[,1])),c(0,0))
@@ -73,6 +79,13 @@ Remarquer que :
 ```{r}
 library(FactoMineR)
 pca <- PCA(data, scale.unit = TRUE, ncp = 11, graph = TRUE)
+pca$var$cos2
+cos2C1 = pca$var$cos2[,1] + pca$var$cos2[,2] # tous proches de 1 donc  
+plot(pca,choix="ind")    # graphe des individus
+plot(pca,choix="var")    # graphe des variables 
+
+plot(pca, cex=pca$ind$cos2, choix="ind")
+plot(pca, select="cos2 0.8", choix="ind")
 ```
 
 ### 3.3 k-means et CAH
@@ -86,7 +99,7 @@ plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster)
 Pour k = 3, on a un groupe qui contient les points dispersés du milieu.
 Pour savoir quelle classification est la plus pertinente, essayons un CAH :
 ```{r}
-hc <- hclust(dist(data))
+hc <- hclust(dist(data), method="ward.D2")
 plot(hc,hang=-1,labels = FALSE)
 rect.hclust(hc,k=2,border = 4)
 rect.hclust(hc,k=3)
@@ -106,10 +119,9 @@ Peut être du côté de la fonction FAMD ?
 
 Une fois les groupes réunis, il serait intéressant de comprendre ce qui les distingue, les deux dimensions n'y suffisent pas entièrement :
 ```{r}
-k = 2
+k = 3
 kmeans.result = kmeans(data,k)
 plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster)
-for(i in 1:k)
 
 data.petit = subset(data,select = c(government,infrastr,writing,texts))
 data.grand = subset(data,select = c(PolPop,PolTerr,CapPop,levels,money))
