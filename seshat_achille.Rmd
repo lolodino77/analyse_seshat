@@ -81,8 +81,14 @@ On a vu sur l'ACP qu'on pouvait distinguer environ deux groupes. On essaie des k
 kmeans.result = kmeans(data,3)
 plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster+3)
 kmeans.result = kmeans(data,2)
-plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster)
+plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col =kmeans.result$cluster)
 ```
+
+
+```{r}
+kmeans.result$cluster
+```
+
 Pour k = 3, on a un groupe qui contient les points dispersés du milieu.
 Pour savoir quelle classification est la plus pertinente, essayons un CAH :
 ```{r}
@@ -147,5 +153,81 @@ boxplot(data.petit.all,col = rep(c(2:(k+1)),length(data.petit)))
 * tests,lm, beackward forward,
 * temps (k means sur évolution PC1)
 
-## 2. Analyse de la base originale
-* random forest
+## 2. Analyse aveec arbres moraux
+On utilise les nouveaux groupes ppur tenter de classifier avec des forêts sur les variables morales
+On commence par importer la base morale
+```{r}
+# detach(data)
+dfm <- read.csv('morale_index_inaxe.csv',sep=',')
+# Mettre l'Index en index et retirer SPC1
+datam <- subset(dfm, select=-c(Index,Time,NGA,sum))
+rownames(datam) <- dfm$Index
+attach(datam)
+head(datam)
+```
+
+On associe ensuite à chaque individu dans la base morale son cluster (1 ou 2) correspondant
+```{r}
+rreess <- kmeans.result$cluster
+datam$cluster <- (rreess[(dfn$Index)%in%(dfm$Index)] ==1)*1
+head(datam)
+```
+Onpeut ensuite faire un arbre
+```{r}
+library(rpart)
+arbre=rpart(datam$cluster~.,datam)
+# summary(arbre)
+# print(arbre)
+library(rpart.plot)
+rpart.plot(arbre, type=4, digits=3)
+```
+Et une foret
+```{r}
+# library(randomForest)
+# RF <- randomForest(datam$cluster~.,datam)
+# pred_RF <- predict(fit_RF,newdata=NewDATA, type="prob")
+# pred_RF
+```
+Ou plutôt de la régression logistique
+
+```{r}
+res <- glm(cluster~.,family=binomial,data=datam)
+summary(res)
+```
+
+```{r}
+exp(res$coefficients)
+```
+
+```{r}
+res0 <- glm(cluster~1,family=binomial,data=datam)
+anova(res0,res,test="Chisq")
+```
+```{r}
+library(MASS)
+res_AIC <- step(res)  #backward par defaut
+```
+```{r}
+summary(res_AIC)
+```
+
+```{r}
+anova(res_AIC,res,test="Chisq")
+```
+
+```{r}
+NewDATA=data.frame(dfm)
+pred=predict(res_AIC, newdata=NewDATA, type="response")  #donne proba d'atre dans classe 1
+# table(pred,rreess)
+```
+
+```{r}
+# library(carData)
+# vif(res_AIC)
+```
+
+```{r}
+# par(mfrow=c(2,2))
+plot(res_AIC)
+```
+
