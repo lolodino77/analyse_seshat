@@ -1,0 +1,151 @@
+---
+title: "Seshat"
+author: "Achille-Laurent"
+date: "15/04/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Les données
+* Seshat global history databank
+* Variables complexité sociale etc
+* Renormalisée, populations en log
+* Mis sous python pour avoir un meileur index
+* Inspiré de l'article
+
+
+## 3. Analyse de la base normalisée
+* base date compter comme différente
+```{r}
+dfn <- read.csv('axial_index.csv',sep=',')
+# Mettre l'Index en index et retirer SPC1
+data <- subset(dfn, select=-c(Index,Time,NGA,PolID))
+rownames(data) <- dfn$Index
+attach(data)
+head(data)
+```
+### 3.1. Vue d'ensemble
+* boxplot
+```{r}
+# Séparer les 2 plots qui sont d'échelle différente
+boxplot(subset(data,select = c(PolPop,PolTerr,CapPop,levels,money)))
+boxplot(subset(data,select = c(government,infrastr,writing,texts)))
+```
+
+### 3.2. ACP
+* (2D, Prop Variance)
+```{r}
+X= scale(data, center=T, scale=T) 
+
+S = cov(X)
+acp = eigen(S)
+lambda = acp$values
+vecteurs_propres = acp$vectors
+Inertie = sum(diag(S))
+part.inertie = lambda/sum(lambda)
+barplot(lambda/sum(lambda),names.arg = 1:length(lambda))
+title(main="Explication des différentes composantes")
+
+# Les composantes principales : 
+C = X %*% vecteurs_propres
+# colnames(C) =   paste("comp", 1:4)
+plot(C[,1:2],type="p",xlab='PC1',ylab='PC2')
+# text(C[,1:2])
+title(main="Projection sur les 2 premiers axes principaux")
+lines(c(min(C[,1]),max(C[,1])),c(0,0))
+lines(c(0,0),c(min(C[,2]),max(C[,2])))
+
+barplot(-vecteurs_propres[,1],ylab = 'Contribution',xlab = 'Variables',names.arg = names(data),axes = TRUE)
+title(main="Contributions des variables au PC1")
+
+barplot(-vecteurs_propres[,2],ylab = 'Contribution',xlab = 'Variables',names.arg = names(data),axes = TRUE)
+title(main="Contributions des variables au PC2")
+```
+
+Remarquer que :
+* La premiere composante explique tout : interpréter
+* On peut remarquer deux clusters sur l'ACP
+* Toutes les variables contribuent de la même façon au PC1, interpréter
+* Pour le pc2 on observe des nuances d'ordre similaire, voir cercle
+```{r}
+library(FactoMineR)
+pca <- PCA(data, scale.unit = TRUE, ncp = 11, graph = TRUE)
+```
+
+### 3.3 k-means et CAH
+On a vu sur l'ACP qu'on pouvait distinguer environ deux groupes. On essaie des k-means :
+```{r}
+kmeans.result = kmeans(data,3)
+plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster+3)
+kmeans.result = kmeans(data,2)
+plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster)
+```
+Pour k = 3, on a un groupe qui contient les points dispersés du milieu.
+Pour savoir quelle classification est la plus pertinente, essayons un CAH :
+```{r}
+hc <- hclust(dist(data))
+plot(hc,hang=-1,labels = FALSE)
+rect.hclust(hc,k=2,border = 4)
+rect.hclust(hc,k=3)
+barplot(hc$height[(length(hc$height)-10):(length(hc$height))])
+```
+On ne peut pas vraiment savoir si c'est deux ou 3 classes qu'on peut garder ... Essayons avec pam
+```{r}
+library(cluster)
+pam.result <- pam(data,2)
+plot(pam.result)
+pam.result <- pam(data,3)
+plot(pam.result)
+```
+Je ne sais pas trop ce que tout cela signifie.
+Peut être du côté de la fonction FAMD ?
+
+
+Une fois les groupes réunis, il serait intéressant de comprendre ce qui les distingue, les deux dimensions n'y suffisent pas entièrement :
+```{r}
+k = 2
+kmeans.result = kmeans(data,k)
+plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster)
+for(i in 1:k)
+
+data.petit = subset(data,select = c(government,infrastr,writing,texts))
+data.grand = subset(data,select = c(PolPop,PolTerr,CapPop,levels,money))
+data.grand.all = list()
+
+for(nom in names(data.grand))
+{
+  for(i in 1:k)
+  {
+      data.grand.all[[paste(nom,i)]] <- data.grand[kmeans.result$cluster==i,nom]
+  }
+}
+boxplot(data.grand.all,col = rep(c(2:(k+1)),length(data.grand)))
+
+data.petit.all = list()
+
+for(nom in names(data.petit))
+{
+  for(i in 1:k)
+  {
+      data.petit.all[[paste(nom,i)]] <- data.petit[kmeans.result$cluster==i,nom]
+  }
+}
+boxplot(data.petit.all,col = rep(c(2:(k+1)),length(data.petit)))
+
+# data.petit.all <- list(data.petit.1$government,data.petit.2$government))
+# head(data.petit.all)
+```
+
+
+### 3.4 K-fold
+* cross validation
+
+### 3.5 Autres
+* tests,lm, beackward forward,
+* temps (k means sur évolution PC1)
+
+## 2. Analyse de la base originale
+* random forest
