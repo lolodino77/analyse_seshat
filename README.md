@@ -8,6 +8,6 @@ Appliquer les outils statistiques vu en cours sur la base de données Seshat dan
 * **R** : code de l'analyse statistique
 
 * **databases** : toutes les bases utilisées
-* **rendus** : rendus html et pdf du code
+* **rendus** : rendus html du code Rmd
 * **images** : images utilisées pour la documentation
 * **python** : code utilisé pour des opérations sur les bases de données
