@@ -5,20 +5,9 @@ date: "15/04/2020"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
-## 1. Les données
-* Seshat global history databank
-* Variables complexité sociale etc
-* Renormalisée, populations en log
-* Mis sous python pour avoir un meileur index
-* Inspiré de l'article
-
-
-## 3. Analyse de la base normalisée
-* base date compter comme différente
+# 1. Données Axial
+## 1.1 Importation
 ```{r}
 dfn <- read.csv('axial_index.csv',sep=',')
 # Mettre l'Index en index et retirer SPC1
@@ -27,16 +16,15 @@ rownames(data) <- dfn$Index
 attach(data)
 head(data)
 ```
-### 3.1. Vue d'ensemble
-* boxplot
+## 1.2. Vue d'ensemble
 ```{r}
 # Séparer les 2 plots qui sont d'échelle différente
 boxplot(subset(data,select = c(PolPop,PolTerr,CapPop,levels,money)))
 boxplot(subset(data,select = c(government,infrastr,writing,texts)))
 ```
 
-### 3.2. ACP
-* (2D, Prop Variance)
+# 2. Analyse en Composante Principale
+
 ```{r}
 X= scale(data, center=T, scale=T) 
 
@@ -46,9 +34,15 @@ lambda = acp$values
 vecteurs_propres = acp$vectors
 Inertie = sum(diag(S))
 part.inertie = lambda/sum(lambda)
+```
+
+## 2.1 Explication
+```{r}
 barplot(lambda/sum(lambda),names.arg = 1:length(lambda))
 title(main="Explication des différentes composantes")
-
+```
+## 2.2. Projection
+```{r}
 # Les composantes principales : 
 C = X %*% vecteurs_propres
 # colnames(C) =   paste("comp", 1:4)
@@ -57,7 +51,9 @@ plot(C[,1:2],type="p",xlab='PC1',ylab='PC2')
 title(main="Projection sur les 2 premiers axes principaux")
 lines(c(min(C[,1]),max(C[,1])),c(0,0))
 lines(c(0,0),c(min(C[,2]),max(C[,2])))
-
+```
+## 2.3 Composantes principales PC1 et PC2
+```{r}
 barplot(-vecteurs_propres[,1],ylab = 'Contribution',xlab = 'Variables',names.arg = names(data),axes = TRUE)
 title(main="Contributions des variables au PC1")
 
@@ -65,18 +61,16 @@ barplot(-vecteurs_propres[,2],ylab = 'Contribution',xlab = 'Variables',names.arg
 title(main="Contributions des variables au PC2")
 ```
 
-Remarquer que :
-* La premiere composante explique tout : interpréter
-* On peut remarquer deux clusters sur l'ACP
-* Toutes les variables contribuent de la même façon au PC1, interpréter
-* Pour le pc2 on observe des nuances d'ordre similaire, voir cercle
+## 2.4 Avec FactoMineR
 ```{r}
 library(FactoMineR)
 pca <- PCA(data, scale.unit = TRUE, ncp = 11, graph = TRUE)
 ```
 
-### 3.3 k-means et CAH
+# 3 k-means
 On a vu sur l'ACP qu'on pouvait distinguer environ deux groupes. On essaie des k-means :
+
+## 3.1 Projection
 ```{r}
 kmeans.result = kmeans(data,3)
 plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster+3)
@@ -84,12 +78,8 @@ kmeans.result = kmeans(data,2)
 plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col =kmeans.result$cluster)
 ```
 
-
-```{r}
-kmeans.result$cluster
-```
-
 Pour k = 3, on a un groupe qui contient les points dispersés du milieu.
+## 3.2 CAH
 Pour savoir quelle classification est la plus pertinente, essayons un CAH :
 ```{r}
 hc <- hclust(dist(data))
@@ -98,29 +88,18 @@ rect.hclust(hc,k=2,border = 4)
 rect.hclust(hc,k=3)
 barplot(hc$height[(length(hc$height)-10):(length(hc$height))])
 ```
-On ne peut pas vraiment savoir si c'est deux ou 3 classes qu'on peut garder ... Essayons avec pam
-```{r}
-library(cluster)
-pam.result <- pam(data,2)
-plot(pam.result)
-pam.result <- pam(data,3)
-plot(pam.result)
-```
-Je ne sais pas trop ce que tout cela signifie.
-Peut être du côté de la fonction FAMD ?
 
-
+## 3.3 Comparaisons des deux clusters
 Une fois les groupes réunis, il serait intéressant de comprendre ce qui les distingue, les deux dimensions n'y suffisent pas entièrement :
 ```{r}
-k = 2
+# Kmeans pour k choisi
+k = 2 
 kmeans.result = kmeans(data,k)
 plot(C[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster)
-for(i in 1:k)
 
-data.petit = subset(data,select = c(government,infrastr,writing,texts))
+# Affichage des grandes variables
 data.grand = subset(data,select = c(PolPop,PolTerr,CapPop,levels,money))
 data.grand.all = list()
-
 for(nom in names(data.grand))
 {
   for(i in 1:k)
@@ -130,8 +109,9 @@ for(nom in names(data.grand))
 }
 boxplot(data.grand.all,col = rep(c(2:(k+1)),length(data.grand)))
 
+# Affichage des petites variables
+data.petit = subset(data,select = c(government,infrastr,writing,texts))
 data.petit.all = list()
-
 for(nom in names(data.petit))
 {
   for(i in 1:k)
@@ -141,38 +121,29 @@ for(nom in names(data.petit))
 }
 boxplot(data.petit.all,col = rep(c(2:(k+1)),length(data.petit)))
 
-# data.petit.all <- list(data.petit.1$government,data.petit.2$government))
-# head(data.petit.all)
 ```
 
 
-### 3.4 K-fold
-* cross validation
-
-### 3.5 Autres
-* tests,lm, beackward forward,
-* temps (k means sur évolution PC1)
-
-## 2. Analyse aveec arbres moraux
+# 4. Analyse sur la base Morale
 On utilise les nouveaux groupes ppur tenter de classifier avec des forêts sur les variables morales
-On commence par importer la base morale
+## 4.1 Création des données 
 ```{r}
-# detach(data)
+detach(data)
 dfm <- read.csv('morale_index_inaxe.csv',sep=',')
+
 # Mettre l'Index en index et retirer SPC1
 datam <- subset(dfm, select=-c(Index,Time,NGA,sum))
 rownames(datam) <- dfm$Index
 attach(datam)
+
+# On associe ensuite à chaque individu dans la base morale son cluster (1 ou 2) correspondant
+rreess <- kmeans.result$cluster
+datam$cluster <- (rreess[(dfn$Index)%in%(dfm$Index)] ==1)*1
+
 head(datam)
 ```
 
-On associe ensuite à chaque individu dans la base morale son cluster (1 ou 2) correspondant
-```{r}
-rreess <- kmeans.result$cluster
-datam$cluster <- (rreess[(dfn$Index)%in%(dfm$Index)] ==1)*1
-head(datam)
-```
-Onpeut ensuite faire un arbre
+## 4.2 Arbre
 ```{r}
 library(rpart)
 arbre=rpart(datam$cluster~.,datam)
@@ -181,31 +152,27 @@ arbre=rpart(datam$cluster~.,datam)
 library(rpart.plot)
 rpart.plot(arbre, type=4, digits=3)
 ```
-Et une foret
-```{r}
-# library(randomForest)
-# RF <- randomForest(datam$cluster~.,datam)
-# pred_RF <- predict(fit_RF,newdata=NewDATA, type="prob")
-# pred_RF
-```
-Ou plutôt de la régression logistique
-
+## 4.3 Régression
+## 4.3.1 Modèle
 ```{r}
 res <- glm(cluster~.,family=binomial,data=datam)
 summary(res)
 ```
 
+### 4.3.2 Odds Ratios
 ```{r}
 exp(res$coefficients)
 ```
 
+### 4.3.3 Pertinence
 ```{r}
 res0 <- glm(cluster~1,family=binomial,data=datam)
 anova(res0,res,test="Chisq")
 ```
+### 4.3.4 AIC
 ```{r}
 library(MASS)
-res_AIC <- step(res)  #backward par defaut
+res_AIC <- step(res) 
 ```
 ```{r}
 summary(res_AIC)
@@ -216,18 +183,7 @@ anova(res_AIC,res,test="Chisq")
 ```
 
 ```{r}
-NewDATA=data.frame(dfm)
-pred=predict(res_AIC, newdata=NewDATA, type="response")  #donne proba d'atre dans classe 1
-# table(pred,rreess)
-```
-
-```{r}
-# library(carData)
-# vif(res_AIC)
-```
-
-```{r}
-# par(mfrow=c(2,2))
+par(mfrow=c(2,2))
 plot(res_AIC)
 ```
 
