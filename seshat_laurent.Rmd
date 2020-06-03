@@ -1,0 +1,320 @@
+## Partie 2 : Analyse à différentes époques
+```{r}
+dfn <- read.csv('axial.csv',sep=',') #NGA et Time séparés sur deux colonnes
+dfn_melange <- read.csv('axial_index.csv',sep=',') #contient une colonne regroupant NGA et Time
+pays_et_date = dfn_melange[[1]]
+dfn[[1]] = pays_et_date
+colnames(dfn)
+colnames(dfn_melange)
+length(colnames(dfn))
+rownames(dfn) <- dfn$NGA
+dfn = subset(dfn, select=-c(PolID, SPC1, MG_corr, NGA))
+attach(dfn)
+head(dfn)
+head(dfn_melange)
+str(dfn)
+```
+* On répartit les données sur 3 époques, un jeu de données de taille environ 288 pour chaque époque
+# t = table(dfn$Time)
+# print(t)
+# cumsum(t)
+# head(dfn)
+# t2 = table(dfn$NGA)
+# names(t2)   
+# print(t2[t2<9])
+# length(t2[t2<9])
+```{r}
+df1 = subset(dfn, -9600 <= dfn$Time & dfn$Time <= -2100) #len = 288
+df2 = subset(dfn, -2000 <= dfn$Time & dfn$Time <= 400) #len = 296
+df3 = subset(dfn, 500 <= dfn$Time & dfn$Time <= 1900) #len = 280
+df1 = subset(df1, select=-c(Time))
+df2 = subset(df2, select=-c(Time))
+df3 = subset(df3, select=-c(Time))
+head(df1)
+```
+
+### 3.1. Vue d'ensemble
+* boxplot
+```{r}
+# Séparer les 2 plots qui sont d'échelle différente
+boxplot(main="df1", subset(df1,select = c(PolPop,PolTerr,CapPop,levels,money)))
+boxplot(main="df1", subset(df1,select = c(government,infrastr,writing,texts)))
+boxplot(main="df2", subset(df2,select = c(PolPop,PolTerr,CapPop,levels,money)))
+boxplot(main="df2", subset(df2,select = c(government,infrastr,writing,texts)))
+boxplot(main="df3", subset(df3,select = c(PolPop,PolTerr,CapPop,levels,money)))
+boxplot(main="df3", subset(df3,select = c(government,infrastr,writing,texts)))
+```
+
+### 3.2. ACP
+* (2D, Prop Variance)
+```{r}
+typeof(df1)
+X1= scale(df1, center=T, scale=T)
+X2= scale(df2, center=T, scale=T)
+X3= scale(df3, center=T, scale=T)
+S1 = cov(X1)
+S2 = cov(X2)
+S3 = cov(X3)
+acp1 = eigen(S1)
+acp2 = eigen(S2)
+acp3 = eigen(S3)
+lambda1 = acp1$values
+lambda2 = acp2$values
+lambda3 = acp3$values
+vecteurs_propres_df1 = acp2$vectors
+vecteurs_propres_df2 = acp2$vectors
+vecteurs_propres_df3 = acp3$vectors
+Inertie1 = sum(diag(S1))
+Inertie2 = sum(diag(S2))
+Inertie3 = sum(diag(S3))
+part.inertie = lambda1/sum(lambda1)
+part.inertie = lambda2/sum(lambda2)
+part.inertie = lambda3/sum(lambda3)
+
+## Graphique : explication des différentes composantes
+barplot(lambda1/sum(lambda1),names.arg = 1:length(lambda2))
+title(main="Explication des différentes composantes df1")
+barplot(lambda2/sum(lambda2),names.arg = 1:length(lambda2))
+title(main="Explication des différentes composantes df2")
+barplot(lambda3/sum(lambda3),names.arg = 1:length(lambda3))
+title(main="Explication des différentes composantes df3")
+
+# Les composantes principales : 
+C1 = X1 %*% vecteurs_propres_df1 #changement de base vers la nouvelle base des composantes principales
+C2 = X2 %*% vecteurs_propres_df2
+C3 = X3 %*% vecteurs_propres_df3
+
+##Graphique : projection sur les 2 premiers axes principaux
+# colnames(C) =   paste("comp", 1:4)
+plot(C1[,1:2],type="p",xlab='PC1',ylab='PC2')
+lines(c(min(C1[,1]),max(C1[,1])),c(0,0))
+lines(c(0,0),c(min(C1[,2]),max(C1[,2])))
+title(main="Projection sur les 2 premiers axes principaux df1")
+
+plot(C2[,1:2],type="p",xlab='PC1',ylab='PC2')
+lines(c(min(C2[,1]),max(C2[,1])),c(0,0))
+lines(c(0,0),c(min(C2[,2]),max(C2[,2])))
+title(main="Projection sur les 2 premiers axes principaux df2")
+
+plot(C3[,1:2],type="p",xlab='PC1',ylab='PC2')
+lines(c(min(C3[,1]),max(C3[,1])),c(0,0))
+lines(c(0,0),c(min(C3[,2]),max(C3[,2])))
+title(main="Projection sur les 2 premiers axes principaux df3")
+
+# str(C)
+# text(C[,1:2])
+
+## Graphique : contributions des variables au PC1
+barplot(-vecteurs_propres_df1[,1],ylab = 'Contribution',xlab = 'Variables',names.arg = names(df1),axes = TRUE)
+title(main="Contributions des variables au PC1 (df1)")
+barplot(-vecteurs_propres_df2[,1],ylab = 'Contribution',xlab = 'Variables',names.arg = names(df2),axes = TRUE)
+title(main="Contributions des variables au PC1 (df2)")
+barplot(-vecteurs_propres_df3[,1],ylab = 'Contribution',xlab = 'Variables',names.arg = names(df3),axes = TRUE)
+title(main="Contributions des variables au PC1 (df3)")
+
+## Graphique : contributions des variables au PC2
+barplot(-vecteurs_propres_df1[,2],ylab = 'Contribution',xlab = 'Variables',names.arg = names(df1),axes = TRUE)
+title(main="Contributions des variables au PC2 (df1)")
+barplot(-vecteurs_propres_df2[,2],ylab = 'Contribution',xlab = 'Variables',names.arg = names(df2),axes = TRUE)
+title(main="Contributions des variables au PC2 (df2)")
+barplot(-vecteurs_propres_df3[,2],ylab = 'Contribution',xlab = 'Variables',names.arg = names(df3),axes = TRUE)
+title(main="Contributions des variables au PC2 (df3)")
+```
+
+Remarquer que :
+* La premiere composante explique tout : interpréter
+* On peut remarquer deux clusters sur l'ACP pour df2 et df3, et vaguement pour df1. 
+* Toutes les variables contribuent de la même façon au PC1, interpréter
+* Pour le pc2 on observe des nuances d'ordre similaire, voir cercle
+```{r}
+library(FactoMineR)
+pca1 <- PCA(df1, scale.unit = TRUE, ncp = 11, graph = TRUE)
+pca2 <- PCA(df2, scale.unit = TRUE, ncp = 11, graph = TRUE)
+pca3 <- PCA(df3, scale.unit = TRUE, ncp = 11, graph = TRUE)
+
+pca1$var$cos2
+pca2$var$cos2
+pca3$var$cos2
+cos2C1_df1 = pca1$ind$cos2[,1] + pca1$ind$cos2[,2] # tous proches de 1 donc  
+cos2C1_df2 = pca2$ind$cos2[,1] + pca2$ind$cos2[,2] # tous proches de 1 donc  
+cos2C1_df3 = pca3$ind$cos2[,1] + pca3$ind$cos2[,2] # tous proches de 1 donc  
+length(cos2C1_df1[cos2C1_df1 > 0.8])
+length(cos2C1_df1[cos2C1_df2 > 0.8])
+length(cos2C1_df1[cos2C1_df3 > 0.8])
+
+plot(pca1,choix="ind")    # graphe des individus
+plot(pca1,choix="var")    # graphe des variables 
+
+plot(pca2,choix="ind")    # graphe des individus
+plot(pca2,choix="var")    # graphe des variables 
+
+plot(pca3,choix="ind")    # graphe des individus
+plot(pca3,choix="var")    # graphe des variables 
+
+plot(pca1, cex=pca1$ind$cos2, choix="ind")
+plot(pca2, cex=pca2$ind$cos2, choix="ind")
+plot(pca3, cex=pca3$ind$cos2, choix="ind")
+
+plot(pca1, select="cos2 0.8", choix="ind")
+plot(pca2, select="cos2 0.8", choix="ind")
+plot(pca3, select="cos2 0.8", choix="ind")
+```
+
+### 3.3 k-means et CAH
+On a vu sur l'ACP qu'on pouvait distinguer environ deux groupes. On essaie des k-means :
+```{r}
+kmeans.result = kmeans(df1,3)
+plot(C1[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster+3, main="df1, k = 3")
+kmeans.result = kmeans(df1,2)
+plot(C1[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster, main="df1, k = 2")
+
+kmeans.result = kmeans(df2,2)
+plot(C2[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster, main="df2, k = 2")
+
+kmeans.result = kmeans(df3,3)
+plot(C3[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster+3, main="df3, k = 3")
+kmeans.result = kmeans(df3,2)
+plot(C3[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster, main="df3, k = 2")
+```
+Pour k = 3, on a un groupe qui contient les points dispersés du milieu.
+Pour savoir quelle classification est la plus pertinente, essayons un CAH :
+```{r}
+hc1 <- hclust(dist(df1), method="ward.D2")
+plot(hc1,hang=-1,labels = FALSE, main="df1")
+rect.hclust(hc1,k=2,border = 4)
+rect.hclust(hc1,k=3)
+barplot(hc1$height[(length(hc1$height)-10):(length(hc1$height))], main="df1")
+
+hc2 <- hclust(dist(df2), method="ward.D2")
+plot(hc2,hang=-1,labels = FALSE, main="df2")
+rect.hclust(hc2,k=2,border = 4)
+rect.hclust(hc2,k=3)
+barplot(hc2$height[(length(hc2$height)-10):(length(hc2$height))], main="df2")
+
+hc3 <- hclust(dist(df3), method="ward.D2")
+plot(hc3,hang=-1,labels = FALSE, main="df3")
+rect.hclust(hc3,k=2,border = 4)
+rect.hclust(hc3,k=3)
+barplot(hc3$height[(length(hc3$height)-10):(length(hc3$height))], main="df3")
+```
+Il semble qu'il faille garder à chaque fois 2 classes.
+```{r}
+library(cluster)
+pam.result <- pam(df1,2)
+plot(pam.result, main="df1, k = 2")
+pam.result <- pam(df1,3)
+plot(pam.result, main="df1, k = 3")
+
+pam.result <- pam(df2,2)
+plot(pam.result, main="df2")
+pam.result <- pam(df2,3)
+plot(pam.result, main="df2")
+
+pam.result <- pam(df3,2)
+plot(pam.result, main="df3")
+pam.result <- pam(df3,3)
+plot(pam.result, main="df3")
+
+```
+Je ne sais pas trop ce que tout cela signifie.
+Peut être du côté de la fonction FAMD ?
+
+
+Une fois les groupes réunis, il serait intéressant de comprendre ce qui les distingue, les deux dimensions n'y suffisent pas entièrement :
+```{r}
+k = 2
+kmeans.result = kmeans(df1,2)
+plot(C1[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster, main = "df1") #affiche kmeans en acp
+
+df1.petit = subset(df1,select = c(government,infrastr,writing,texts))
+df1.grand = subset(df1,select = c(PolPop,PolTerr,CapPop,levels,money))
+df1.grand.all = list()
+
+for(nom in names(df1.grand))
+{
+  for(i in 1:k)
+  {
+      df1.grand.all[[paste(nom,i)]] <- df1.grand[kmeans.result$cluster==i,nom]
+  }
+}
+boxplot(df1.grand.all,col = rep(c(2:(k+1)),length(df1.grand)), main = "df1")
+
+df1.petit.all = list()
+
+for(nom in names(df1.petit))
+{
+  for(i in 1:k)
+  {
+      df1.petit.all[[paste(nom,i)]] <- df1.petit[kmeans.result$cluster==i,nom]
+  }
+}
+boxplot(df1.petit.all,col = rep(c(2:(k+1)),length(df1.petit)), main = "df1")
+
+# data.petit.all <- list(data.petit.1$government,data.petit.2$government))
+# head(data.petit.all)
+```
+
+```{r}
+k = 2
+kmeans.result = kmeans(df2,2)
+plot(C2[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster, main = "df2") #affiche kmeans en acp
+
+df2.petit = subset(df2,select = c(government,infrastr,writing,texts))
+df2.grand = subset(df2,select = c(PolPop,PolTerr,CapPop,levels,money))
+df2.grand.all = list()
+
+for(nom in names(df2.grand))
+{
+  for(i in 1:k)
+  {
+      df2.grand.all[[paste(nom,i)]] <- df2.grand[kmeans.result$cluster==i,nom]
+  }
+}
+boxplot(df2.grand.all,col = rep(c(2:(k+1)),length(df2.grand)), main = "df2")
+
+df2.petit.all = list()
+
+for(nom in names(df2.petit))
+{
+  for(i in 1:k)
+  {
+      df2.petit.all[[paste(nom,i)]] <- df2.petit[kmeans.result$cluster==i,nom]
+  }
+}
+boxplot(df2.petit.all,col = rep(c(2:(k+1)),length(df2.petit)), main = "df2")
+
+# data.petit.all <- list(data.petit.1$government,data.petit.2$government))
+# head(data.petit.all)
+```
+
+```{r}
+k = 2
+kmeans.result = kmeans(df3,2)
+plot(C3[,1:2],type="p",xlab='PC1',ylab='PC2',col = kmeans.result$cluster, main = "df3") #affiche kmeans en acp
+
+df3.petit = subset(df3,select = c(government,infrastr,writing,texts))
+df3.grand = subset(df3,select = c(PolPop,PolTerr,CapPop,levels,money))
+df3.grand.all = list()
+
+for(nom in names(df3.grand))
+{
+  for(i in 1:k)
+  {
+      df3.grand.all[[paste(nom,i)]] <- df3.grand[kmeans.result$cluster==i,nom]
+  }
+}
+boxplot(df3.grand.all,col = rep(c(2:(k+1)),length(df3.grand)), main = "df3")
+
+df3.petit.all = list()
+
+for(nom in names(df3.petit))
+{
+  for(i in 1:k)
+  {
+      df3.petit.all[[paste(nom,i)]] <- df3.petit[kmeans.result$cluster==i,nom]
+  }
+}
+boxplot(df3.petit.all,col = rep(c(2:(k+1)),length(df3.petit)), main = "df3")
+
+# data.petit.all <- list(data.petit.1$government,data.petit.2$government))
+# head(data.petit.all)
