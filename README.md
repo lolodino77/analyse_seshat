@@ -1,11 +1,13 @@
-# Analyse de la base de données Seshat
+# ![logo_seshat](images/logo_seshat.png)  Analyse statistique de Seshat
+Polytech, MAIN4
 
-# Dossiers
-* R : code de l'analyse statistique
-* rendus : rendus
+## Principe
+Appliquer les outils statistiques vu en cours sur la base de données Seshat dans le cadre d'un projet scolaire.
 
-* databases : toutes les bases utilisées
-* doc_externe : article de référence
-* images : images, à retirer
-* python : code utilisé pour des opérations sur les bases de données
-* seshat_laurent_files : à retirer
+## Dossiers
+* **R** : code de l'analyse statistique
+
+* **databases** : toutes les bases utilisées
+* **doc_externe** : article de référence
+* **images** : images utilisées pour la documentation
+* **python** : code utilisé pour des opérations sur les bases de données
