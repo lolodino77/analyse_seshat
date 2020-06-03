@@ -1,15 +1,17 @@
 ---
 title: "Seshat"
 author: "Achille-Laurent"
-date: "15/04/2020"
+date: "03/06/2020"
 output: html_document
 ---
 
+# Analyse de la base Seshat
+Code concernant la première approche, l'ACP, la classification et la régression
 
 # 1. Données Axial
 ## 1.1 Importation
 ```{r}
-dfn <- read.csv('axial_index.csv',sep=',')
+dfn <- read.csv('../databases/axial_index.csv',sep=',')
 # Mettre l'Index en index et retirer SPC1
 data <- subset(dfn, select=-c(Index,Time,NGA,PolID))
 rownames(data) <- dfn$Index
@@ -126,10 +128,13 @@ boxplot(data.petit.all,col = rep(c(2:(k+1)),length(data.petit)))
 
 # 4. Analyse sur la base Morale
 On utilise les nouveaux groupes ppur tenter de classifier avec des forêts sur les variables morales
-## 4.1 Création des données 
 ```{r}
 detach(data)
-dfm <- read.csv('morale_index_inaxe.csv',sep=',')
+```
+
+## 4.1 Création des données 
+```{r}
+dfm <- read.csv('../databases/morale_index_inaxe.csv',sep=',')
 
 # Mettre l'Index en index et retirer SPC1
 datam <- subset(dfm, select=-c(Index,Time,NGA,sum))

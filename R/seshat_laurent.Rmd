@@ -1,7 +1,15 @@
-## Partie 2 : Analyse à différentes époques
+---
+title: "seshat_epoques"
+author: "Achille-Laurent"
+date: "03/06/2020"
+output: html_document
+---
+
+# 3 Analyse à différentes époques
+Code concernant la partie de l'analyse à différentes époques
 ```{r}
-dfn <- read.csv('axial.csv',sep=',') #NGA et Time séparés sur deux colonnes
-dfn_melange <- read.csv('axial_index.csv',sep=',') #contient une colonne regroupant NGA et Time
+dfn <- read.csv('../databases/axial.csv',sep=',') #NGA et Time séparés sur deux colonnes
+dfn_melange <- read.csv('../databases/axial_index.csv',sep=',') #contient une colonne regroupant NGA et Time
 pays_et_date = dfn_melange[[1]]
 dfn[[1]] = pays_et_date
 colnames(dfn)
